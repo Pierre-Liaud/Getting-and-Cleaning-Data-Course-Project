@@ -66,3 +66,6 @@ LAYING$activity <- "LAYING"
 # Recreate one dataset with selected variable means by subject
 tidy_dataset<- rbind(WALKING, WALKING_UPSTAIRS, WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING)
 names(tidy_dataset)[names(tidy_dataset) == "Group.1"] <- "subject"
+
+# tidy_data file creation
+write.table(tidy_dataset, file = "tidy_data.txt", row.name=FALSE)

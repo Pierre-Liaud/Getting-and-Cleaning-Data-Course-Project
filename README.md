@@ -203,4 +203,8 @@ tidy_dataset<- rbind(WALKING, WALKING_UPSTAIRS, WALKING_DOWNSTAIRS, SITTING, STA
 ```{r}
 names(tidy_dataset)[names(tidy_dataset) == "Group.1"] <- "subject"
 ```
+### tidy_data file creation
+```{r}
+write.table(tidy_dataset, file = "tidy_data.txt", row.name=FALSE)
+```
 </p>
