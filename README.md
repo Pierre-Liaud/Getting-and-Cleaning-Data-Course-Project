@@ -17,7 +17,7 @@ Create a new project in R under version control (GIT), paste project Url.
 <p> 
 Data are acquired downloading and extracting zip file from this URL: <br>
 <https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip>
-Extract the folder ("UCI HAR Dataset"") in the project directory 
+Extract the folder ("UCI HAR Dataset") in the project directory 
 </p>
 
 ## 1. Merges the training and the test sets to create one data set
@@ -28,11 +28,13 @@ Recorded data comes from: <br>
 'train/X_train.txt': Training set <br> 
 'test/X_test.txt': Test set <br>
 
-Activity labels to associate records with activity comes from: <br>
+Activity labels to associate activity to records comes from: <br>
 'train/y_train.txt': Training labels <br>
 'test/y_test.txt': Test labels <br>
 
-'subject_train.txt' and 'subject_test.txt' will be used to give specific id and avoid false duplicate before merging test and training data.  
+Subject id to associate subjects to records comes from: <br>
+'subject_train.txt' <br>
+'subject_test.txt' <br> 
 </p>
 
 ### Read files <br>
@@ -59,24 +61,23 @@ These files contains respectively 7352 and 2947 obs. <br>
 
 ### Label rows with activity labels <br>
 <p>
-Add columns with activity labels from y_... file to X_... data file <br>
+Add columns with activity labels from 'y_...' file to 'X_...' data file <br>
 The number and order of rows are the same in each set, we can use cbind to simply add activity label columns (last one) <br>
 ```{r}
-train <- cbind(X_train, y_train)
-test <- cbind(X_test, y_test)
+temp_train <- cbind(X_train, y_train)
+temp_test <- cbind(X_test, y_test)
 ```
 ** Datasets have now 561+1 variables **
 </p>
 
-### Label rows with unique subjet ID <br>
+### Label rows with subjet id <br>
 <p>
-Opening subject train and test files, we see that subjects have common id. <br>
-We have to make different id before merging <br>
-We will add "_train"  or "_test" to each id. and add this as a new column to train and test data <br>
+Add columns with subject id from 'subject_...' file to corresponding data file <br>
+The number and order of rows are the same in each set, we can use cbind to simply add activity label columns (last one) <br>
 
 ```{r}
-train$subj_id <- c(paste(subject_train$V1, "_train", sep=""))
-test$subj_id <- c(paste(subject_test$V1, "_test", sep=""))
+train <- cbind(temp_train, subject_train)
+test <- cbind(temp_test, subject_test)
 ```
 ** Datasets have now 561+2 variables **
 </p>
@@ -163,17 +164,43 @@ head(mean_std)
 Tidy data set will be a matrix with the following variables <br>
 6 activities <br>
 30 subjects x 80 means of "mean and std variables" <br>
+
+### Subseting by activities
+```{r}
+temp_WALKING <- mean_std[mean_std$activity=="WALKING",]
+temp_WALKING_UPSTAIRS <- mean_std[mean_std$activity=="WALKING_UPSTAIRS",]
+temp_WALKING_DOWNSTAIRS <- mean_std[mean_std$activity=="WALKING_DOWNSTAIRS",]
+temp_SITTING <- mean_std[mean_std$activity=="SITTING",]
+temp_STANDING <- mean_std[mean_std$activity=="STANDING",]
+temp_LAYING <- mean_std[mean_std$activity=="LAYING",]
+```
+### Obtain mean values for each activities by subject and (re)label rows with activity for further merging
+```{r}
+WALKING <- aggregate(x = temp_WALKING[, 1:79], by = list(temp_WALKING$subj_id),FUN = mean)
+WALKING$activity <- "WALKING"
+
+WALKING_UPSTAIRS <- aggregate(x = temp_WALKING_UPSTAIRS[, 1:79], by = list(temp_WALKING_UPSTAIRS$subj_id), FUN = mean)
+WALKING_UPSTAIRS$activity <- "WALKING_UPSTAIRS"
+
+WALKING_DOWNSTAIRS <- aggregate(x = temp_WALKING_DOWNSTAIRS[, 1:79], by = list(temp_WALKING_DOWNSTAIRS$subj_id), FUN = mean)
+WALKING_DOWNSTAIRS$activity <- "WALKING_DOWNSTAIRS"
+
+SITTING <- aggregate(x = temp_SITTING[, 1:79], by = list(temp_SITTING$subj_id), FUN = mean)
+SITTING$activity <- "SITTING"
+
+STANDING <- aggregate(x = temp_STANDING[, 1:79], by = list(temp_STANDING$subj_id), FUN = mean)
+STANDING$activity <- "STANDING"
+
+LAYING <- aggregate(x = temp_LAYING[, 1:79], by = list(temp_LAYING$subj_id), FUN = mean)
+LAYING$activity <- "LAYING"
+```
+
+### Recreate one dataset with selected 79 variable averaged by subjects for the 30 subjects in the 6 activities.
+```{r}
+tidy_dataset<- rbind(WALKING, WALKING_UPSTAIRS, WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING)
+```
+"Group.1" name was given to the first column when we aggregate means, this column is renamed "subjects"
+```{r}
+names(tidy_dataset)[names(tidy_dataset) == "Group.1"] <- "subject"
+```
 </p>
-?????
-
-
-sapply(X = mean_std[,1:80], FUN = mean)
-
-
-select activity
-mean for each column loop for each row (subject) 1:30
-
-mean_std %>% group_by(mean_std$activity)
-mean(mean_std[mean_std$ =="WALKING"],)
-mean_std %>% group_by(mean_std$activity)
-
