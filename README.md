@@ -20,22 +20,19 @@ Data are acquired downloading and extracting zip file from this URL: <br>
 Extract the folder ("UCI HAR Dataset"") in the project directory 
 </p>
 
-### Install and load usefull packages in R
-<p>
-```{r}
-install.packages("tidyverse")
-library(tidyverse)
-```
-</p>
-
 ## 1. Merges the training and the test sets to create one data set
 <p> 
 Needed files according to UCI HAR Dataset 'README.txt': <br>
 
+Recorded data comes from: <br>
 'train/X_train.txt': Training set <br> 
-'test/X_test.txt': Test set
+'test/X_test.txt': Test set <br>
 
-'subject_test.txt''subject_test.txt' will be used to label rows before merging test and training data.  
+Activity labels to associate records with activity comes from: <br>
+'train/y_train.txt': Training labels <br>
+'test/y_test.txt': Test labels <br>
+
+'subject_train.txt' and 'subject_test.txt' will be used to give specific id and avoid false duplicate before merging test and training data.  
 </p>
 
 ### Read files <br>
@@ -43,6 +40,8 @@ Needed files according to UCI HAR Dataset 'README.txt': <br>
 ```{r}
 X_train <- read.table("./UCI HAR Dataset/train/X_train.txt")
 X_test <- read.table("./UCI HAR Dataset/test/X_test.txt")
+y_train <- read.table("./UCI HAR Dataset/train/y_train.txt")
+y_test <- read.table("./UCI HAR Dataset/test/y_test.txt")
 ```
 'train/X_train.txt' contains 7352 obs. and 561 variables <br> 
 'test/X_test.txt' contains 2947 obs. and 561 variables <br>  
@@ -58,10 +57,35 @@ These files contains respectively 7352 and 2947 obs. <br>
 **Informations about observations:** According UCI HAR Dataset 'README.txt', each row of subject files identifies the subject who performed the activity (1 to 30) for each window sample.
 </p>
 
-### Merge files <br>
+### Label rows with activity labels <br>
 <p>
+Add columns with activity labels from y_... file to X_... data file <br>
+The number and order of rows are the same in each set, we can use cbind to simply add activity label columns (last one) <br>
 ```{r}
-test_train <- rbind()
+train <- cbind(X_train, y_train)
+test <- cbind(X_test, y_test)
+```
+** Datasets have now 561+1 variables **
+</p>
+
+### Label rows with unique subjet ID <br>
+<p>
+Opening subject train and test files, we see that subjects have common id. <br>
+We have to make different id before merging <br>
+We will add "_train"  or "_test" to each id. and add this as a new column to train and test data <br>
+
+```{r}
+train$subj_id <- c(paste(subject_train$V1, "_train", sep=""))
+test$subj_id <- c(paste(subject_test$V1, "_test", sep=""))
+```
+** Datasets have now 561+2 variables **
+</p>
+
+### Merge sets <br>
+<p>
+The number and order of variables are the same in each set, we can use rbind to simply add test data under train data
+```{r}
+all_data <- rbind(train, test)
 ```
 </p>
 
@@ -71,7 +95,8 @@ test_train <- rbind()
 
 ### Find columns to extract <br>
 <p>
-561 variables are listed in UCI HAR Dataset 'features.txt'
+561 variables are listed in UCI HAR Dataset 'features.txt' <br>
+** +2 for activity and subj_id columns at the end**
 ```{r}
 features <- read.table("./UCI HAR Dataset/features.txt")
 ```
@@ -86,46 +111,69 @@ columns <- grep("*mean*|*std*",features$V2)
 <p>
 subseting on column with corresponding variables
 ```{r}
-mean_std <- test_train[,columns] 
+mean_std <- all_data[,c(columns,562,563)] 
 ```
+*562 and 563 were created for activity and subj_id columns*
 </p>
 
 ## 3. Uses descriptive activity names to name the activities in the data set
 <p>
-Usefull files according to UCI HAR Dataset README:
-'activity_labels.txt': Links the class labels with their activity name
-'train/y_train.txt': Training labels
-'test/y_test.txt': Test labels
+</p>
 
-Change (label) in data <br>
+### Name activities
+<p>
+According to UCI HAR Dataset README, each descriptive activity names can be found in 'activity_labels.txt' <br>
+Activity labels were added to datasets before merging and extracting in step 1 (562th column). <br> 
+We have to change labels to corresponding activity names <br>
 
+```{r}
+read.table("./UCI HAR Dataset/activity_labels.txt")
+```
 1 WALKING <br>
 2 WALKING_UPSTAIRS <br>
 3 WALKING_DOWNSTAIRS <br>
 4 SITTING <br>
 5 STANDING <br>
 6 LAYING <br>
+
+Attribution of names for each value
+```{r}
+mean_std$V1.1[mean_std$V1.1 == "1"] <- "WALKING"
+mean_std$V1.1[mean_std$V1.1 == "2"] <- "WALKING_UPSTAIRS"
+mean_std$V1.1[mean_std$V1.1 == "3"] <- "WALKING_DOWNSTAIRS"
+mean_std$V1.1[mean_std$V1.1 == "4"] <- "SITTING"
+mean_std$V1.1[mean_std$V1.1 == "5"] <- "STANDING"
+mean_std$V1.1[mean_std$V1.1 == "6"] <- "LAYING"
+```
 </p>
 
 ## 4. Appropriately labels the data set with descriptive variable names
 <p>
-Usefull files according to UCI HAR Dataset README:
-'activity_labels.txt': Links the class labels with their activity name
-
-from 'feature-info': <br>
-
-prefix 't' to denote time <br>
-prefix 'f' to indicate frequency domain signals <br>
-"acc" accelerometer data <br>
-"Gyro" gyroscope data <br>
-"-X" is used to denote 1-axial signals in the X direction <br>
-"-Y" is used to denote 1-axial signals in the Y direction <br>
-"-Z" is used to denote 1-axial signals in the Z direction <br>
-"-XYZ" is used to denote 3-axial signals in the X, Y and Z directions <br>
+According to UCI HAR Dataset README, each variable descriptive names are listed in 'features.txt' <br>
+We have to pick the one needed to label selected columns and add the already assigned subj_id label to match number of columns <br>
+```{r}
+colnames(mean_std) <- c(features$V2[columns], "activity" ,"subj_id" )
+head(mean_std)
+```
+*562th column was added but not renamed, 563th column has already subj_id name but the vector need to have a lenght corresponding to number of columns*
 </p>
 
 ## 5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
 <p>
+Tidy data set will be a matrix with the following variables <br>
+6 activities <br>
+30 subjects x 80 means of "mean and std variables" <br>
 </p>
+?????
 
+
+sapply(X = mean_std[,1:80], FUN = mean)
+
+
+select activity
+mean for each column loop for each row (subject) 1:30
+
+mean_std %>% group_by(mean_std$activity)
+mean(mean_std[mean_std$ =="WALKING"],)
+mean_std %>% group_by(mean_std$activity)
 
