@@ -39,6 +39,7 @@ Subject id to associate subjects to records comes from: <br>
 
 ### Read files <br>
 <p>
+  
 ```{r}
 X_train <- read.table("./UCI HAR Dataset/train/X_train.txt")
 X_test <- read.table("./UCI HAR Dataset/test/X_test.txt")
@@ -63,6 +64,7 @@ These files contains respectively 7352 and 2947 obs. <br>
 <p>
 Add columns with activity labels from 'y_...' file to 'X_...' data file <br>
 The number and order of rows are the same in each set, we can use cbind to simply add activity label columns (last one) <br>
+
 ```{r}
 temp_train <- cbind(X_train, y_train)
 temp_test <- cbind(X_test, y_test)
@@ -85,6 +87,7 @@ test <- cbind(temp_test, subject_test)
 ### Merge sets <br>
 <p>
 The number and order of variables are the same in each set, we can use rbind to simply add test data under train data
+
 ```{r}
 all_data <- rbind(train, test)
 ```
@@ -98,6 +101,7 @@ all_data <- rbind(train, test)
 <p>
 561 variables are listed in UCI HAR Dataset 'features.txt' <br>
 ** +2 for activity and subj_id columns at the end**
+
 ```{r}
 features <- read.table("./UCI HAR Dataset/features.txt")
 ```
@@ -111,6 +115,7 @@ columns <- grep("*mean*|*std*",features$V2)
 ### Extract columns in focused tidy dataset <br>
 <p>
 subseting on column with corresponding variables
+
 ```{r}
 mean_std <- all_data[,c(columns,562,563)] 
 ```
@@ -152,6 +157,7 @@ mean_std$V1.1[mean_std$V1.1 == "6"] <- "LAYING"
 <p>
 According to UCI HAR Dataset README, each variable descriptive names are listed in 'features.txt' <br>
 We have to pick the one needed to label selected columns and add the already assigned subj_id label to match number of columns <br>
+
 ```{r}
 colnames(mean_std) <- c(features$V2[columns], "activity" ,"subj_id" )
 head(mean_std)
